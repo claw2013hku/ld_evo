@@ -19,7 +19,7 @@ public class Constants {
 	
 	public static final float AI_NodeDensity = 0.14f;
 	public static int z_mapGrid = 1;
-	public static int z_AIGrid = 1;
+	public static int z_AIGrid = 2;
 	public static int z_uiMenu = 3;
 	public static int z_splash = 4;
 }

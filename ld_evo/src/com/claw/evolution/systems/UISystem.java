@@ -34,6 +34,7 @@ import com.artemis.utils.ImmutableBag;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -380,7 +381,7 @@ public class UISystem extends ASystem{
 		{
 			ButtonEvent be = (ButtonEvent)event;
 			//hide in-game-menu
-			if(be.type == ButtonEvent.ButtonType.RESUME)
+			if(be.type == ButtonEvent.ButtonType.START_OPENING)
 			{
 				Entity splashEntity = Assemblage.loadSplash();
 				showUIElement(splashEntity, false, 0f);
@@ -402,8 +403,18 @@ public class UISystem extends ASystem{
 												fadeIn(1f), 
 												color(Color.YELLOW, 0.3f),
 												fadeOut(0.5f))),
-								destroyUIElement(splashEntity, true))
-								);
+								destroyUIElement(splashEntity, true),
+								new InvokeProcess()
+								{
+									@Override
+									public void invoke() {
+										ButtonEvent evt = Pools.obtain(ButtonEvent.class);
+										evt.type = ButtonEvent.ButtonType.START;
+										EventManager.pushEvent(evt);
+									}
+							
+								}
+								));
 			}
 			//inflate the in-game menu when menu is clicked
 			else if(be.type == ButtonEvent.ButtonType.IN_GAME_MENU)

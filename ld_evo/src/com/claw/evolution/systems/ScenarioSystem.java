@@ -2,6 +2,7 @@ package com.claw.evolution.systems;
 
 import com.artemis.Aspect;
 import com.artemis.Entity;
+import com.claw.evolution.components.CWorldActor;
 import com.claw.evolution.events.IEvent;
 
 /** 1. Handle Add / Remove actor events 
@@ -10,8 +11,8 @@ import com.claw.evolution.events.IEvent;
  *  4. Change game state **/
 public class ScenarioSystem extends ASystem {
 
-	protected ScenarioSystem(Aspect aspect) {
-		super(aspect);
+	protected ScenarioSystem() {
+		super(Aspect.getEmpty());
 		setPassive(true);
 	}
 
@@ -27,6 +28,20 @@ public class ScenarioSystem extends ASystem {
 
 	@Override
 	public boolean handleEvent(IEvent event) {
+//		if(event.getClass() == CollisionEvent.class)
+//		{
+//			Entity e1;
+//			Entity e2;
+//			if(e1.getComponent(CWorldActor.class).type == CWorldActor.Type.PLAYER)
+//			{
+//				
+//			}
+//			else if()
+//			{
+//				
+//				
+//			}
+//		}
 		return false;
 	}
 

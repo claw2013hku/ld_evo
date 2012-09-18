@@ -137,14 +137,15 @@ public class PhysicsSystem extends ASystem {
 			{
 				return;
 			}
-			if(idA == world.getManager(TagManager.class).getEntity(Constants.tag_player))
-			{
-				world.deleteEntity(idB);
-			}
-			else if (idB == world.getManager(TagManager.class).getEntity(Constants.tag_player))
-			{
-				world.deleteEntity(idA);
-			}
+			
+//			if(idA == world.getManager(TagManager.class).getEntity(Constants.tag_player))
+//			{
+//				world.deleteEntity(idB);
+//			}
+//			else if (idB == world.getManager(TagManager.class).getEntity(Constants.tag_player))
+//			{
+//				world.deleteEntity(idA);
+//			}
 //			Gdx.app.debug(Constants.debug_tag, "begin contact : " + idA + ", " + idB);
 		}
 

@@ -18,7 +18,10 @@ public class Constants {
 	public static final String tag_PosMap = "PosMap";
 	
 	public static final float AI_NodeDensity = 0.14f;
+	
+	//the z-order of UI elements, higher Z brings UI element to the front, add / modify.
 	public static int z_mapGrid = 0;
+	public static int z_sample = 1;
 	public static int z_AIGrid = 2;
 	public static int z_uiMenu = 3;
 	public static int z_splash = 4;

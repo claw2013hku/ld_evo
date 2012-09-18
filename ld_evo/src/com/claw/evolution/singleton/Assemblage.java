@@ -53,6 +53,7 @@ import com.claw.evolution.ai.AINode;
 import com.claw.evolution.ai.AIPatrolState;
 import com.claw.evolution.ai.AIState;
 import com.claw.evolution.components.*;
+import com.claw.evolution.components.CUIMenu.MenuType;
 import com.claw.evolution.components.CWorldActor.Type;
 import com.claw.evolution.events.*;
 import com.claw.evolution.systems.AISystem;
@@ -884,7 +885,7 @@ public class Assemblage {
 		es.getManager(GroupManager.class).add(entity, Constants.tag_UIMenu);
 		es.getManager(GroupManager.class).add(entity, Constants.tag_UIActor);
 		
-		setActorZ(window, Constants.z_uiMenu);
+		setActorZ(entity, Constants.z_uiMenu);
 		
 		return entity;
 	}
@@ -914,12 +915,12 @@ public class Assemblage {
 		
 		es.getManager(GroupManager.class).add(entity, Constants.tag_UIActor);
 		
-		setActorZ(splashImage, Constants.z_splash);
+		setActorZ(entity, Constants.z_splash);
 		
 		return entity;
 	}
 	
-	private static void setActorZ(Actor actor, int z)
+	private static void setActorZ(Entity e, int z)
 	{
 		checkEntityManagerInstance();
 		World es = getInstance().es;
@@ -927,11 +928,110 @@ public class Assemblage {
 		int actorsWithHigherZ = 0;
 		for(int i = 0; i < actors.size(); i++)
 		{
+			if(e == actors.get(i)) continue;
 			if(actors.get(i).getComponent(CUIActor.class).zOrder > z)
 			{
 				actorsWithHigherZ++;
 			}
 		}
+		Actor actor = e.getComponent(CUIActor.class).actor;
 		actor.setZIndex(actors.size() - 1 - actorsWithHigherZ);
+	}
+
+	private static Entity newUIEntity(Actor actor, int zOrder, boolean isMenu, CUIMenu.MenuType type)
+	{
+		actor.setVisible(false);
+		getUIStage().stage.addActor(actor);
+		
+		CUIActor cUIActor = Pools.obtain(CUIActor.class);
+		cUIActor.actor = actor;
+		cUIActor.zOrder = Constants.z_uiMenu;
+		
+		Entity entity = getES().createEntity();
+		entity.addComponent(cUIActor);
+		
+		getES().getManager(GroupManager.class).add(entity, Constants.tag_UIActor);
+		
+		if(isMenu)
+		{
+			CUIMenu cUIMenu = Pools.obtain(CUIMenu.class);
+			cUIMenu.shown = false;
+			cUIMenu.type = CUIMenu.MenuType.IN_GAME_LAUNCHED;
+			entity.addComponent(cUIMenu);
+			getES().getManager(GroupManager.class).add(entity, Constants.tag_UIMenu);
+		}
+		
+		getES().addEntity(entity);
+
+		setActorZ(entity, zOrder);
+		return entity;
+	}
+	
+	private static Entity newUIActorEntity(Actor actor, int zOrder)
+	{
+		return newUIEntity(actor, zOrder, false, MenuType.MAIN);
+	}
+	
+	private static Entity newUIMenuEntity(Actor actor, int zOrder, MenuType type)
+	{
+		return newUIEntity(actor, zOrder, true, type);
+	}
+
+	
+	//modify or add similar methods for loading UI actor / menu
+	public static Entity loadSampleUIActor()
+	{
+		Texture texture = FileManager.getResource(Gdx.files.internal("data/characters/tadpole.png"), Texture.class);
+        TextureRegion textureRegion = new TextureRegion(texture);
+        Drawable splashDrawable = new TextureRegionDrawable( textureRegion );
+       
+        Image sampleImage = new Image( splashDrawable, Scaling.stretch );
+        sampleImage.setFillParent(true);
+        
+        //newUIActorEntity() adds required components to the entity system for a UI actor e.g. image
+        return newUIActorEntity(sampleImage, Constants.z_splash);
+	}
+	
+	public static Entity loadSampleUIMenu()
+	{
+		Skin sampleSkin = FileManager.getResource(Gdx.files.internal("data/uiskin.json"), Skin.class);
+		Texture texture1 = FileManager.getResource(Gdx.files.internal("data/badlogicsmall.jpg"), Texture.class);
+		TextureRegion image = new TextureRegion(texture1);
+		TextureRegion imageFlipped = new TextureRegion(image);
+		imageFlipped.flip(true, true);
+		
+		ImageButtonStyle style = new ImageButtonStyle(sampleSkin.get(ButtonStyle.class));
+		style.imageUp = new TextureRegionDrawable(image);
+		style.imageDown = new TextureRegionDrawable(imageFlipped);
+		ImageButton iconButton = new ImageButton(style);
+		
+		/*
+		 * clicked() is called when clicked, 
+		 * the only listener I found working so far is click listener,
+		 * other kinds of UI elements supports more kinds of listener e.g. textChangedListener,
+		 * refer to libgdx test codes
+		 */
+		iconButton.addListener(
+				new ClickListener()
+				{
+					@Override
+					public void clicked(InputEvent event, float x, float y) {
+						ButtonEvent evt = Pools.obtain(ButtonEvent.class);
+						evt.type = ButtonEvent.ButtonType.SAMPLE;
+						EventManager.pushEvent(evt);
+					}
+				}
+		);
+		
+		Window sampleWindow = new Window("Dialog", sampleSkin);
+		sampleWindow.setPosition(0, 0);
+		sampleWindow.defaults().spaceBottom(10);
+		sampleWindow.row().fill().expandX();
+		sampleWindow.add(iconButton);
+		
+		//newUIMenuEntity() adds required components to the entity system for a UI Menu
+		//the first parameter refers to the topmost actor (actor without parent), 
+		//window instead of iconButton in this case.
+		return newUIMenuEntity(sampleWindow, Constants.z_sample, MenuType.SAMPLE);
 	}
 }

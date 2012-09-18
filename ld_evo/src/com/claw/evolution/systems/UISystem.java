@@ -21,6 +21,7 @@ import static com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.color;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.moveBy;
+import static com.badlogic.gdx.scenes.scene2d.actions.Actions.parallel;
 
 import java.util.Random;
 import java.util.UUID;
@@ -34,10 +35,10 @@ import com.artemis.utils.ImmutableBag;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pools;
 import com.claw.evolution.Constants;
 import com.claw.evolution.components.CUIActor;
@@ -47,6 +48,7 @@ import com.claw.evolution.components.CUIMenu.MenuType;
 import com.claw.evolution.events.ButtonEvent;
 import com.claw.evolution.events.IEvent;
 import com.claw.evolution.events.RemoveActorEvent;
+import com.claw.evolution.events.SampleEvent;
 import com.claw.evolution.processes.ActionPendingProcess;
 import com.claw.evolution.processes.Process;
 import com.claw.evolution.processes.InvokeProcess;
@@ -78,13 +80,15 @@ public class UISystem extends ASystem{
 		//listen about Button events for showing / hiding in-game menus
 		EventManager.registerListener(this, ButtonEvent.class);
 		EventManager.registerListener(this, RemoveActorEvent.class);
+		//RegisterListener() for all interested events for this system, otherwise handleEvent() will not be called for unregisted event types
+		EventManager.registerListener(this, SampleEvent.class);
 		
 		//make necessary entities for this system
 		Assemblage.loadUIStage();
 		m_stage = world.getManager(TagManager.class).getEntity(Constants.tag_UI).getComponent(CUI.class).stage;
 		
-		Assemblage.loadInGameMenu();
-		showMenu(false, MenuType.IN_GAME_LAUNCHED);
+		//shows a menu based on its type; showMenu() also has many override for more control e.g. fade in time
+		showMenu(MenuType.SAMPLE);
 	}
 	
 	/** Draw and animate UI elements**/
@@ -156,8 +160,12 @@ public class UISystem extends ASystem{
 				menuId = Assemblage.loadInGameMenu();
 				break;
 			//TODO: more menu types
-				default:
-				menuId = Assemblage.loadInGameMenu();
+			//What to load based on menu type when a showMenu() is called but menu is not loaded
+			case SAMPLE:
+				menuId = Assemblage.loadSampleUIMenu();
+				break;
+			default:
+				menuId = Assemblage.loadSampleUIMenu();
 				break;
 			}
 		}
@@ -186,9 +194,15 @@ public class UISystem extends ASystem{
 	 * else a process that will show the menu is returned to be linked with other processes
 	 * @param isProcess false : show immediately
 	 * @return head of Process if not shown immediately
-	 */public Process showMenu(boolean isProcess, final CUIMenu.MenuType menuType)
+	 */
+	public Process showMenu(boolean isProcess, final CUIMenu.MenuType menuType)
 	{
 		return showMenu(isProcess, menuType, 750f);
+	}
+	
+	public Process showMenu(final CUIMenu.MenuType menuType)
+	{
+		return showMenu(false, menuType, 750f);
 	}
 	
 	public Process hideMenu(boolean isProcess, final CUIMenu.MenuType menuType, final float fadeOutTime)
@@ -279,7 +293,7 @@ public class UISystem extends ASystem{
 									@Override
 									public boolean act(float delta) {
 										actorC.actor.setVisible(false);
-										//Assemblage.unloadAndKillEntity(entity);
+										world.deleteEntity(entity);
 										return false;
 									}
 								}));
@@ -375,46 +389,13 @@ public class UISystem extends ASystem{
 	int newPlayerX = 400;
 	@Override
 	public boolean handleEvent(IEvent event) {
-		//animate the menu until disappear when resume is clicked
-		// ++ test: add splash screen afterwards
 		if(event.getClass() == ButtonEvent.class)
 		{
 			ButtonEvent be = (ButtonEvent)event;
-			//hide in-game-menu
-			if(be.type == ButtonEvent.ButtonType.START_OPENING)
+
+			if(be.type == ButtonEvent.ButtonType.SAMPLE)
 			{
-				Entity splashEntity = Assemblage.loadSplash();
-				showUIElement(splashEntity, false, 0f);
-				ProcessManager.attach(
-						ProcessManager.link(
-								UIAction(splashEntity, 
-										sequence(
-												fadeOut(0.0f), 
-												fadeIn(0.3f), 
-												moveBy(30f, -90f, 0.5f))),
-								UIAction(getMenuId(MenuType.IN_GAME_LAUNCHED), 
-										sequence(
-												fadeOut(0.5f), 
-												fadeIn(0.3f), 
-												color(Color.BLUE, 0.5f))),
-								UIAction(splashEntity, 
-										sequence(
-												fadeOut(0.5f), 
-												fadeIn(1f), 
-												color(Color.YELLOW, 0.3f),
-												fadeOut(0.5f))),
-								destroyUIElement(splashEntity, true),
-								new InvokeProcess()
-								{
-									@Override
-									public void invoke() {
-										ButtonEvent evt = Pools.obtain(ButtonEvent.class);
-										evt.type = ButtonEvent.ButtonType.START;
-										EventManager.pushEvent(evt);
-									}
-							
-								}
-								));
+				startSampleAction();
 			}
 			//inflate the in-game menu when menu is clicked
 			else if(be.type == ButtonEvent.ButtonType.IN_GAME_MENU)
@@ -446,6 +427,11 @@ public class UISystem extends ASystem{
 			Gdx.app.debug(Constants.debug_tag, tag + "removing actor");
 			rae.actor.remove();
 		}
+		// add / modify for more type of events, refer the events package
+		else if (event.getClass() == SampleEvent.class)
+		{
+			
+		}
 		return false;
 	}
 
@@ -458,5 +444,85 @@ public class UISystem extends ASystem{
 	@Override
 	public String getName() {
 		return "UI";
+	}
+	
+	private Array<Process> tempProcesses = Pools.obtain(Array.class);
+	
+	public void startAction()
+	{
+		
+	}
+	
+	public void endAction()
+	{
+		if(tempProcesses.size < 1) return;
+		Process head = tempProcesses.first();
+		for(int i = 1; i < tempProcesses.size; i++)
+		{
+			ProcessManager.link(head, tempProcesses.get(i));
+		}
+		ProcessManager.attach(head);
+		tempProcesses.clear();
+	}
+	
+	public void act(Entity e, Action... actions)
+	{
+		for(int i = 0; i < actions.length; i++)
+		{
+			tempProcesses.add(UIAction(e, actions[i]));
+		}
+	}
+	
+	public void show(Entity e)
+	{
+		tempProcesses.add(showUIElement(e, true, 0f));
+	}
+	
+	public void remove(Entity e)
+	{
+		tempProcesses.add(destroyUIElement(e, true));
+	}
+	
+	public void fireEvent(final IEvent ev)
+	{
+		tempProcesses.add(new InvokeProcess()
+			{
+				@Override
+				public void invoke() {
+					EventManager.pushEvent(ev);
+				}
+			});	
+	}
+	
+	/**A sample series of actons of every kind**/
+	public void startSampleAction()
+	{
+		//begin every sequence of action of startAction() and endAction()
+		startAction();
+		
+		//get entity of UI actor (or menu for the 2nd line, though not recommended) (and load the actor just beforehand)
+		Entity sampleEntity = Assemblage.loadSampleUIActor();
+		//Entity sampleEntity = getMenuId(MenuType.SAMPLE);
+		
+		//show() should be called right before it should be visible to the player
+		show(sampleEntity);
+		/*act() performs libgdx Actions on the UI actor, 
+			for more kinds of libgdx Actions Ctrl+Click "sequence" below,
+			then import the new kind of action on the top of the source file for use, 
+			e.g. import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sample;
+		*/
+		act(sampleEntity, sequence(fadeOut(0.0f), fadeIn(0.3f), moveBy(30f, -90f, 0.5f)));
+		act(sampleEntity, fadeOut(1f));
+		act(sampleEntity, parallel(fadeIn(0.3f), color(Color.YELLOW, 0.3f)));
+		act(sampleEntity, parallel(fadeOut(0.7f), color(Color.RED, 0.4f)));
+		//remove() deletes the entity (and frees the memory of the bitmap, unimplemented yet)
+		remove(sampleEntity);
+		
+		//fireEvent() fires an event
+		SampleEvent sampleEvt = Pools.obtain(SampleEvent.class);
+		sampleEvt.sampleData = 1f;
+		fireEvent(sampleEvt);
+		
+		endAction();
 	}
 }

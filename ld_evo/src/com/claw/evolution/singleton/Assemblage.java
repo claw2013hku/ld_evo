@@ -191,10 +191,11 @@ public class Assemblage {
 		es.getManager(GroupManager.class).add(entity, Constants.tag_phyBody);
 		es.getManager(TagManager.class).register(Constants.tag_world, entity);
 		
-		float texelPerPixel = (float)width / (float)texture.getWidth();
+		float texelPerPixelW = (float)width / (float)texture.getWidth();
+		float texelPerPixelH = (float)height / (float)texture.getHeight();
 		int pixel = 256;
-		int lasti = texture.getWidth() / pixel + (texture.getWidth() % pixel == 0 ? 0 : 1) - 1;
-		int lastj = texture.getHeight() / pixel + (texture.getHeight() % pixel == 0 ? 0 : 1) - 1;
+		int lasti = texture.getWidth() / pixel + (texture.getWidth() % pixel == 0 ? 0 : 1);
+		int lastj = texture.getHeight() / pixel + (texture.getHeight() % pixel == 0 ? 0 : 1);
 		for(int i = 0; i <= lasti; i++)
 		{
 			for(int j = 0; j <= lastj; j++)
@@ -203,15 +204,15 @@ public class Assemblage {
 				float posy = j == lastj ? j * (float)pixel + texture.getHeight() % pixel / 2f : j * pixel + pixel / 2;
 				
 				CPosition cPos = Pools.obtain(CPosition.class);
-				cPos.x = posx * texelPerPixel;
-				cPos.y = posy * texelPerPixel;
+				cPos.x = posx * texelPerPixelW;
+				cPos.y = posy * texelPerPixelH;
 				
 				float dimx = i == lasti ? texture.getWidth() % pixel : pixel;
 				float dimy = j == lastj ? texture.getHeight() % pixel : pixel;
 				
 				CDimension cDim = Pools.obtain(CDimension.class);
-				cDim.width = dimx * texelPerPixel;
-				cDim.height = dimy * texelPerPixel;
+				cDim.width = dimx * texelPerPixelW;
+				cDim.height = dimy * texelPerPixelH;
 				
 				TextureRegion region = Pools.obtain(TextureRegion.class);
 				region.setRegion(texture);
